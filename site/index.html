@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title> cargo wasm </title>
+  </head>
+  <body>
+    <input type="text" name="input" id="input" value="Type here">
+    <span id="output">Digest will be shown here</span>
+    <script src="bundle.js"></script>
+    <script>
+      window.Module = {}
+      var Sha1 = {
+        digest: function(str) {
+          let buf = newString(Module, str);
+          let outptr = Module.digest(buf);
+          let result = copyCStr(Module, outptr);
+          Module.dealloc(buf);
+          Module.dealloc(outptr);
+          return result;
+        }
+      }
+
+      fetchAndInstantiate("./rusty_web_sha1.wasm", {})
+        .then(mod => {
+          Module.alloc   = mod.exports.alloc;
+          Module.dealloc = mod.exports.dealloc;
+          Module.digest  = mod.exports.digest;
+          Module.memory  = new Uint8Array(mod.exports.memory.buffer)
+
+          var input = document.getElementById("input");
+          var output = document.getElementById("output");
+          output.innerText = Sha1.digest(input.value);
+
+          input.addEventListener("keyup", function(e) {
+            output.innerText = Sha1.digest(input.value);
+          });
+        });
+    </script>
+  </body>
+</html>
